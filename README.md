@@ -26,34 +26,53 @@ Download the latest release from the [releases page](https://github.com/jbuet/ku
 
 ## Usage
 
-The tool supports two main use cases:
+The tool supports three main use cases:
 
 ### 1. Create a standalone debug pod
 
 ```bash
-kubectl-debug -i <debug-image>
+kubectl-debug -it --image jbuet/debug:latest
 ```
 
 This creates a new debug pod in the default namespace. You can specify a different namespace with `-n`.
 
-### 2. Create a debug pod targeting an existing pod
+### 2. Create a copy of an existing pod with debug container
 
 ```bash
-kubectl-debug -p <target-pod> -i <debug-image>
+kubectl-debug -p <target-pod> --copy -it --image jbuet/debug:latest
 ```
 
-This creates a debug pod that:
-- Shares process namespace with the target pod
+This creates a new pod that:
+- Is a copy of the target pod
+- Includes your debug container
+- Shares process namespace
 - Inherits labels from the target pod
 - Uses the specified debug image
+
+### 3. Add a debug container to an existing pod
+
+```bash
+kubectl-debug -p <target-pod> -it --image jbuet/debug:latest
+```
+
+This adds an ephemeral container to the target pod that:
+- Shares process namespace with the target pod
+- Uses the specified debug image
+- Inherits security context from the target pod
 
 ### Flags
 
 - `-n, --namespace`: Namespace for the debug pod (default: "default")
 - `-p, --pod`: Name of the target pod (optional)
-- `-i, --image`: Debug container image (required)
-- `-a, --attach`: Automatically attach to the debug pod after creation
-- `-r, --remove`: Remove the debug pod after the debug session (requires --attach)
+- `--image`: Debug container image (default: "jbuet/debug:latest")
+- `-i, --stdin`: Keep stdin open even if not attached
+- `-t, --tty`: Allocate a TTY for the container
+- `--rm`: Remove the debug pod after the session ends
+- `--copy`: Create a copy of the target pod instead of adding a container
+- `--profile`: Security profile to use (general, restricted, baseline, privileged)
+- `--memory-limit`: Memory limit for the debug container (default: "128Mi")
+- `--cpu-request`: CPU request for the debug container (default: "100m")
+- `--memory-request`: Memory request for the debug container (default: "128Mi")
 
 ## Security Features
 
