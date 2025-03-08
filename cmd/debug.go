@@ -556,20 +556,50 @@ func runDebug() error {
 			setupSignalHandler(debugPodName)
 		}
 
-		if interactive && tty {
-			log.Printf("Waiting for pod to be ready...\n")
-			if err := waitForPod(debugPodName); err != nil {
-				return newExecError("%v", err)
-			}
-			log.Printf("Attaching to pod...\n")
-			if err := attachToPod(debugPodName); err != nil {
-				return newExecError("%v", err)
-			}
-			if removeAfter {
-				log.Printf("Removing debug pod...\n")
-				if err := deletePod(debugPodName); err != nil {
-					return newExecError("%v", err)
+		// Wait for pod to be ready
+		log.Printf("Waiting for pod to be ready...")
+		if err := waitForPod(debugPodName); err != nil {
+			return newExecError("pod did not become ready: %v", err)
+		}
+
+		// If --rm flag is set, clean up the pod after the session ends
+		if removeAfter {
+			defer func() {
+				log.Printf("Cleaning up debug pod %s...", debugPodName)
+				deleteArgs := []string{
+					"delete",
+					"pod",
+					debugPodName,
+					"-n",
+					namespace,
 				}
+				deleteCmd := ExecCommand("kubectl", deleteArgs...)
+				if err := deleteCmd.Run(); err != nil {
+					log.Printf("Warning: Failed to delete debug pod: %v", err)
+				} else {
+					log.Printf("Debug pod deleted successfully")
+				}
+			}()
+		}
+
+		// Attach to the pod if interactive mode is enabled
+		if interactive && tty {
+			attachArgs := []string{
+				"attach",
+				"-it",
+				debugPodName,
+				"-n",
+				namespace,
+			}
+			attachCmd := ExecCommand("kubectl", attachArgs...)
+			attachCmd.Stdin = os.Stdin
+			attachCmd.Stdout = os.Stdout
+			attachCmd.Stderr = os.Stderr
+			if err := attachCmd.Run(); err != nil {
+				if exitErr, ok := err.(*exec.ExitError); ok {
+					os.Exit(exitErr.ExitCode())
+				}
+				return fmt.Errorf("error attaching to pod: %v", err)
 			}
 		} else {
 			log.Printf("You can access the pod with: kubectl exec -it %s -n %s -- sh\n", debugPodName, namespace)
