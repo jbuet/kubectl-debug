@@ -48,6 +48,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          target: nonroot
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
@@ -58,10 +59,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          target: root
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ steps.meta.outputs.tags }}-root
-          build-args: |
-            ROOT_USER=true
           cache-from: type=gha
           cache-to: type=gha,mode=max 

@@ -1,4 +1,4 @@
-FROM alpine:3.21.3
+FROM alpine:3.21.3 AS base
 
 RUN echo 'https://dl-cdn.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories
 
@@ -15,17 +15,13 @@ RUN apk update && \
     # kubernetes
     kubectl
 
-ARG ROOT_USER=false
-RUN if [ "$ROOT_USER" = "false" ]; then \
-        addgroup -S -g 1000 nonroot && \
-        adduser -S -u 1000 -G nonroot nonroot; \
-    fi
+# Non-root target
+FROM base AS nonroot
+RUN addgroup -S -g 1000 nonroot && \
+    adduser -S -u 1000 -G nonroot nonroot && \
+    chown -R nonroot:nonroot /home/nonroot
+USER 1000:1000
 
-# Set proper permissions for non-root user
-RUN if [ "$ROOT_USER" = "false" ]; then \
-        chown -R nonroot:nonroot /home/nonroot; \
-    fi
-
-USER ${ROOT_USER:+0:0}${ROOT_USER:-1000:1000}
-
-ENTRYPOINT ["bash"]
+# Root target
+FROM base AS root
+USER 0:0
