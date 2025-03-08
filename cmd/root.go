@@ -9,15 +9,16 @@ import (
 var (
 	namespace     string
 	podName       string
-	containerName string
 	image         string
-	targetPod     string
-	autoAttach    bool
+	interactive   bool
+	tty           bool
 	removeAfter   bool
 	force         bool
 	cpuRequest    string
 	memoryLimit   string
 	memoryRequest string
+	profile       string
+	copyPod       bool
 )
 
 var rootCmd = &cobra.Command{
@@ -29,29 +30,43 @@ It provides an easy-to-use CLI interface for debugging Kubernetes pods.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if podName == "" {
-			return fmt.Errorf("pod name is required")
+		// Validate removeAfter flag
+		if removeAfter && !(interactive && tty) {
+			return fmt.Errorf("--rm requires -it")
 		}
+
+		// Validate profile
+		switch profile {
+		case "general", "restricted", "baseline", "privileged", "":
+			// Valid profiles
+		default:
+			return fmt.Errorf("invalid profile %q: must be one of: general, restricted, baseline, privileged", profile)
+		}
+
 		return runDebug()
 	},
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "namespace of the pod")
-	rootCmd.PersistentFlags().StringVarP(&podName, "pod", "p", "", "name of the pod to debug")
-	rootCmd.PersistentFlags().StringVarP(&containerName, "container", "c", "", "name of the container to debug")
-	rootCmd.PersistentFlags().StringVarP(&image, "image", "i", "jbuet/debug:v1.0.0", "debug container image")
-	rootCmd.PersistentFlags().StringVarP(&targetPod, "target", "t", "", "target pod name if different from original")
-	rootCmd.PersistentFlags().BoolVarP(&autoAttach, "attach", "a", false, "automatically attach to the debug pod")
-	rootCmd.PersistentFlags().BoolVarP(&removeAfter, "rm", "r", false, "automatically remove the pod after the session ends")
+	// Set namespace flag with default value
+	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "namespace for the debug pod")
+
+	// Other flags
+	rootCmd.PersistentFlags().StringVarP(&podName, "pod", "p", "", "name of the target pod (optional)")
+	rootCmd.PersistentFlags().StringVar(&image, "image", "jbuet/debug:latest", "debug container image")
+	rootCmd.PersistentFlags().BoolVarP(&interactive, "stdin", "i", false, "keep stdin open even if not attached")
+	rootCmd.PersistentFlags().BoolVarP(&tty, "tty", "t", false, "allocate a TTY for the container")
+	rootCmd.PersistentFlags().BoolVar(&removeAfter, "rm", false, "automatically remove the pod after the session ends")
 	rootCmd.PersistentFlags().BoolVarP(&force, "force", "f", false, "force creation of a new debug pod if one already exists")
+	rootCmd.PersistentFlags().BoolVar(&copyPod, "copy", false, "create a copy of the target pod instead of adding a container")
+
+	// Security profile flag
+	rootCmd.PersistentFlags().StringVar(&profile, "profile", "", "security profile to use (general, restricted, baseline, privileged)")
 
 	// Resource flags
 	rootCmd.PersistentFlags().StringVar(&memoryLimit, "memory-limit", "128Mi", "memory limit for the debug container")
 	rootCmd.PersistentFlags().StringVar(&cpuRequest, "cpu-request", "100m", "CPU request for the debug container")
 	rootCmd.PersistentFlags().StringVar(&memoryRequest, "memory-request", "128Mi", "memory request for the debug container")
-
-	rootCmd.MarkPersistentFlagRequired("pod")
 }
 
 func Execute() error {

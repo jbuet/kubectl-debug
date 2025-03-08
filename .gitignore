@@ -31,3 +31,4 @@ kubectl-debug
 kubectl-debug-*.tar.gz
 
 #  
+coverage.html
