@@ -391,11 +391,18 @@ func createDebugPod() (string, error) {
 	}
 
 	// Add the debug container
+	var command []string
+	if interactive && tty {
+		command = []string{"bash"}
+	} else {
+		command = []string{"sleep", "infinity"}
+	}
+
 	debugPod.Spec.Containers = []corev1.Container{
 		{
 			Name:            "debugger",
 			Image:           image,
-			Command:         interactive && tty ? []string{"bash"} : []string{"sleep", "infinity"},
+			Command:         command,
 			Stdin:           true,
 			TTY:             true,
 			SecurityContext: containerContext,
