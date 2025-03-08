@@ -45,7 +45,7 @@ jobs:
 
       # Build and push non-root image
       - name: Build and push non-root image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           target: nonroot
@@ -56,7 +56,7 @@ jobs:
 
       # Build and push root image
       - name: Build and push root image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           target: root
