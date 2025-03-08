@@ -725,17 +725,11 @@ func runDebug() error {
 		"--target=" + containerName,
 	}
 
-	// Check if target pod has a security context
-	secContext, err := getTargetPodSecurityContext()
-	if err != nil {
-		log.Printf("Warning: Could not get target pod security context: %v", err)
-	} else if secContext != nil && secContext.RunAsUser != nil {
-		// Only set profile if target pod has security context
-		if profile == "" {
-			args = append(args, "--profile=general")
-		} else {
-			args = append(args, "--profile="+profile)
-		}
+	// Always set profile if specified, otherwise use "general" as default
+	if profile != "" {
+		args = append(args, "--profile="+profile)
+	} else {
+		args = append(args, "--profile=general")
 	}
 
 	if interactive {
