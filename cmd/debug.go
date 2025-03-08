@@ -556,10 +556,12 @@ func runDebug() error {
 			setupSignalHandler(debugPodName)
 		}
 
-		// Wait for pod to be ready
-		log.Printf("Waiting for pod to be ready...")
-		if err := waitForPod(debugPodName); err != nil {
-			return newExecError("pod did not become ready: %v", err)
+		// Wait for pod to be ready only if we're going to attach to it
+		if interactive && tty {
+			log.Printf("Waiting for pod to be ready...")
+			if err := waitForPod(debugPodName); err != nil {
+				return newExecError("pod did not become ready: %v", err)
+			}
 		}
 
 		// If --rm flag is set, clean up the pod after the session ends
