@@ -1,27 +1,43 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch"],
-      "matchPackagePatterns": ["^ghcr.io/", "^docker.io/"],
-      "automerge": true
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "matchPackageNames": [
+        "/^ghcr.io//",
+        "/^docker.io//"
+      ]
     },
     {
-      "matchPackagePatterns": ["^actions/"],
       "groupName": "github-actions",
-      "pinDigests": true
+      "pinDigests": true,
+      "matchPackageNames": [
+        "/^actions//"
+      ]
     }
   ],
   "dockerfile": {
-    "fileMatch": ["Dockerfile"]
+    "fileMatch": [
+      "Dockerfile"
+    ]
   },
   "github-actions": {
-    "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"]
+    "fileMatch": [
+      "\\.github/workflows/.*\\.ya?ml$"
+    ]
   },
   "dependencyDashboard": true,
-  "labels": ["dependencies"],
-  "schedule": ["every weekend"]
-} 
+  "labels": [
+    "dependencies"
+  ],
+  "schedule": [
+    "every weekend"
+  ]
+}
